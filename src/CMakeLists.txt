@@ -20,8 +20,8 @@ if   (PRESET_WIN32)
         win32/thd.h
         win32/thd.c
 
-        win32/mtx.h
-        win32/mtx.c
+        win32/mut.h
+        win32/mut.c
 
         thd.h
         mut.h

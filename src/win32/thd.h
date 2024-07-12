@@ -1,9 +1,7 @@
-#ifndef __WIN32_THD_H__
-#define __WIN32_THD_H__
+#ifndef THREAD_WIN32_THD_H
+#define THREAD_WIN32_THD_H
 
-#ifdef PRESET_FEATURE_THREAD
-
-#include "../../core.h"
+#include <core.h>
 
 extern obj_trait *thd_t;
 typedef struct    thd  {
@@ -15,10 +13,6 @@ typedef struct    thd  {
     void*  ret;
 }   thd;
 
-bool_t thd_new  (thd*, u32_t, va_list);
-bool_t thd_clone(thd*, thd*)          ;
-void   thd_del  (thd*)                ;
-fut*   thd_fut  (thd*)                ;
+fut* thd_fut(thd*);
 
-#endif
 #endif

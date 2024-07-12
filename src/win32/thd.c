@@ -1,52 +1,43 @@
-#ifdef PRESET_FEATURE_THREAD
 #include "thd.h"
 #include <Windows.h>
 
-void
-    thd_do_run
+int do_run(mem*, int(*func)(any_t), any_t arg);
+
+static void
+    do_thd
         (thd* self)                              {
             if (trait_of(self) != thd_t) goto err;
-            if (!mod_new())              goto err;
 
-            if (!obj_new_at(&this, this_t, 2, self->func, self->arg)) goto err;
+            self->ret  = (any_t) do_run(null_t, self->func, self->arg);
             self->stat = fut_ready;
-            mod_del ();
-            del(&this);
-    err:    self->stat = fut_pend;
+            return;
+
+    err:    self->stat = fut_err;
+            return;
 }
 
-u64_t
-    thd_do_poll
-        (thd* par)                                    {
-            if (trait_of(par) != thd_t) return fut_err;
-            return par->stat;
+static u64_t
+    do_poll
+        (thd* self)                                    {
+            if (trait_of(self) != thd_t) return fut_err;
+            return self->stat;
 }
 
-void*
-    thd_do_ret
-        (thd* par)                                   {
-            if (trait_of(par) != thd_t) return null_t;
-            return par->ret;
+static void*
+    do_ret
+        (thd* self)                                   {
+            if (trait_of(self) != thd_t) return null_t;
+            return self->ret;
 }
 
-fut_ops thd_fut_ops = make_fut_ops (
-    thd_do_poll,
-    thd_do_ret
+static fut_ops 
+    do_fut = make_fut_ops (
+        do_poll,
+        do_ret
 );
 
-obj_trait thd_trait = make_trait (
-    thd_new    ,
-    thd_clone  ,
-    null_t     ,
-    thd_del    ,
-    sizeof(thd),
-    null_t
-);
-
-obj_trait *thd_t = &thd_trait;
-
-bool_t
-    thd_new
+static bool_t
+    do_new
         (thd* self, u32_t par_count, va_list par)                            {
             void* func = null_t; if (par_count > 0) func = va_arg(par, void*);
             void* arg  = null_t; if (par_count > 1) arg  = va_arg(par, void*);
@@ -55,39 +46,49 @@ bool_t
             self->func = func    ;
             self->arg  = arg     ;
             self->thd  = CreateThread (
-                null_t    ,
-                0         ,
-                thd_do_run,
-                self      ,
-                0         ,
+                null_t,
+                0     ,
+                do_thd,
+                self  ,
+                0     ,
                 null_t
             );
 
             return self->thd != INVALID_HANDLE_VALUE;
 }
 
-bool_t
-    thd_clone
-        (thd* par, thd* par_clone) {
+static bool_t
+    do_clone
+        (thd* self, thd* clone) {
             return false_t;
 }
 
-void
-    thd_del
-        (thd* par)                                 {
-            WaitForSingleObject(par->thd, INFINITE);
-            CloseHandle        (par->thd);
+static void
+    do_del
+        (thd* self)                                 {
+            WaitForSingleObject(self->thd, INFINITE);
+            CloseHandle        (self->thd);
 }
+
+static obj_trait 
+    do_obj = make_trait (
+        do_new     ,
+        do_clone   ,
+        null_t     ,
+        do_del     ,
+        sizeof(thd),
+        null_t
+);
+
+obj_trait* thd_t = &do_obj;
 
 fut*
     thd_fut
-        (thd* par)                                   {
-            if (trait_of(par) != thd_t) return null_t;
-            return make (fut) from                   (
-                2           ,
-                &thd_fut_ops,
-                par
+        (thd* self)                                   {
+            if (trait_of(self) != thd_t) return null_t;
+            return make (fut) from (
+                2      ,
+                &do_fut,
+                self
             );
 }
-
-#endif
